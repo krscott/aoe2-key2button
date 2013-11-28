@@ -6,14 +6,18 @@
 ;
 ; To reset origin location, use Shift+CapsLock
 
-#IfWinActive Age of Empires
+#NoEnv
+#Persistent
 #SingleInstance force
+SendMode, Input
 
 CoordMode, Mouse, Screen
-SetCapsLockState Off
-SetDefaultMouseSpeed 0
+SetCapsLockState, Off
+SetDefaultMouseSpeed, 0
 
 ; Variables
+
+settingsFilename := "aoe2_settings.csv"
 
 buttonSize := 42
 
@@ -21,69 +25,38 @@ buttonSize := 42
 offsetX := 266
 offsetY := 892
 
-; States
+keymapEnabled := False
 
-keyToClickState := 0
+; Load settings
 
-; Keybindings
+LoadSettings()
+SaveSettings()
 
-~Pause::
-	SetCapsLockState Off
-	ExitApp
-return
+; Functions
 
-;$+e::CapsKey("E", "{Up}")
-;$+s::CapsKey("S", "{Left}")
-;$+d::CapsKey("D", "{Down}")
-;$+f::CapsKey("F", "{Right}")
-$+g::CapsKey("G", "g")
-
-; Key-to-Button
-
-~CapsLock::
-	if (GetKeyState("CapsLock", "T"))
-	{
-		keyToClickState := 0
-	}
-	else
-	{
-		keyToClickState := 1
-	}
-return
-
-$+CapsLock::SetOriginAtMouse()
-
-$q::MapKeyToButton("q", 0, 0)
-$w::MapKeyToButton("w", 1, 0)
-$e::MapKeyToButton("e", 2, 0)
-$r::MapKeyToButton("r", 3, 0)
-$t::MapKeyToButton("t", 4, 0)
-
-$a::MapKeyToButton("a", 0, 1)
-$s::MapKeyToButton("s", 1, 1)
-$d::MapKeyToButton("d", 2, 1)
-$f::MapKeyToButton("f", 3, 1)
-$g::MapKeyToButton("g", 4, 1)
-
-$z::MapKeyToButton("z", 0, 2)
-$x::MapKeyToButton("x", 1, 2)
-$c::MapKeyToButton("c", 2, 2)
-$v::MapKeyToButton("v", 3, 2)
-$b::MapKeyToButton("b", 4, 2)
-
-
-; Helper functions
-
-CapsKey(def, key)
+SaveSettings()
 {
-	global keyToClickState
-	if (0 = keyToClickState)
+	global
+	local settingsStr
+	settingsStr = %offsetX%, %offsetY%, %buttonSize%
+	IfExist, %settingsFilename%
 	{
-		Send %key%
+		FileDelete, %settingsFilename%
 	}
-	else
+	FileAppend, %settingsStr%, %settingsFilename%
+}
+
+LoadSettings()
+{
+	global
+	local arr, str
+	IfExist, %settingsFilename%
 	{
-		Send %def%
+		FileRead, str, %settingsFilename%
+		StringSplit, arr, str, `,
+		offsetX = %arr1%
+		offsetY = %arr2%
+		buttonSize = %arr3%
 	}
 }
 
@@ -92,26 +65,76 @@ SetOriginAtMouse()
 	global offsetX, offsetY
 	MouseGetPos, offsetX, offsetY
 	;Msgbox, Offset %offsetX%, %offsetY%
+	SaveSettings()
 }
 
-MapKeyToButton(letter, x, y)
+ClickButton(row, col)
 {
-	global offsetX, offsetY, buttonSize, keyToClickState
-	if (0 = keyToClickState)
+	global offsetX, offsetY, buttonSize
+
+	x := col * buttonSize + offsetX
+	y := row * buttonSize + offsetY
+
+	MouseGetPos, oldX, oldY
+	Click %x%, %y%
+	MouseMove %oldX%, %oldY%
+}
+
+
+; Keybindings
+
+~Pause::
+	SetCapsLockState, Off
+	ExitApp
+return
+~+Pause::Reload
+
+; Key-to-Button
+
+#IfWinActive Age of Empires
+
+~CapsLock::
+	; IfWinNotActive, Age of Empires
+	; {
+	; 	SetCapsLockState, Off
+	; 	keymapEnabled := False
+	; 	Return
+	; }
+	if (GetKeyState("CapsLock", "T"))
 	{
-		;Msgbox, %x%, %y%, %buttonSize%, %offsetX%, %offsetY%
-
-		x := x * buttonSize + offsetX, y := y * buttonSize + offsetY
-
-		MouseGetPos, oldX, oldY
-		Click %x%, %y%
-		MouseMove %oldX%, %oldY%
-
-		;Msgbox, Click %x%, %y%
+		keymapEnabled := True
 	}
 	else
 	{
-		Send %letter%
+		keymapEnabled := False
 	}
-}
+return
+
+$+CapsLock::SetOriginAtMouse()
+
+#If (keymapEnabled)
+
+$+e::Send, {Up}
+$+s::Send, {Left}
+$+d::Send, {Down}
+$+f::Send, {Right}
+$+g::Send, g
+
+$q::ClickButton(0, 0)
+$w::ClickButton(0, 1)
+$e::ClickButton(0, 2)
+$r::ClickButton(0, 3)
+$t::ClickButton(0, 4)
+
+$a::ClickButton(1, 0)
+$s::ClickButton(1, 1)
+$d::ClickButton(1, 2)
+$f::ClickButton(1, 3)
+$g::ClickButton(1, 4)
+
+$z::ClickButton(2, 0)
+$x::ClickButton(2, 1)
+$c::ClickButton(2, 2)
+$v::ClickButton(2, 3)
+$b::ClickButton(2, 4)
 
