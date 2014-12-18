@@ -91,15 +91,15 @@ return
 
 ; Key-to-Button
 
+#IfWinNotActive Age of Empires
+
+~CapsLock::
+	keymapEnabled := False
+Return
+
 #IfWinActive Age of Empires
 
 ~CapsLock::
-	; IfWinNotActive, Age of Empires
-	; {
-	; 	SetCapsLockState, Off
-	; 	keymapEnabled := False
-	; 	Return
-	; }
 	if (GetKeyState("CapsLock", "T"))
 	{
 		keymapEnabled := True
@@ -108,7 +108,7 @@ return
 	{
 		keymapEnabled := False
 	}
-return
+Return
 
 $+CapsLock::SetOriginAtMouse()
 
